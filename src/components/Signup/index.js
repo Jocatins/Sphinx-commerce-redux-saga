@@ -1,19 +1,40 @@
-import React, { useState } from 'react';
-import { withRouter } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { signUpUserStart } from './../../redux/User/userActions';
 import './styles.scss';
-
-import { auth, handleUserProfile } from './../../firebase/utils';
 
 import AuthWrapper from './../AuthWrapper';
 import FormInput from './../forms/FormInput';
 import Button from './../forms/Button';
 
+const mapState = ({ user }) => ({
+  currentUser: user.currentUser,
+  userErr: user.userErr,
+});
 const SignUp = (props) => {
+  const dispatch = useDispatch();
+  const history = useHistory();
+  const { currentUser, userErr } = useSelector(mapState);
+
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState([]);
+
+  useEffect(() => {
+    if (currentUser) {
+      reset();
+      history.push('/');
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (Array.isArray(userErr) && userErr.length > 0) {
+      setErrors(userErr);
+    }
+  }, [userErr]);
 
   const reset = () => {
     setDisplayName('');
@@ -23,22 +44,16 @@ const SignUp = (props) => {
     setErrors([]);
   };
 
-  const handleFormSubmit = async (e) => {
+  const handleFormSubmit = (e) => {
     e.preventDefault();
-
-    if (password !== confirmPassword) {
-      const err = ['password is incorrect'];
-      setErrors(err);
-      return;
-    }
-    try {
-      const { user } = await auth.createUserWithEmailAndPassword(email, password);
-      await handleUserProfile(user, { displayName });
-      reset();
-      props.history.push('/');
-    } catch (err) {
-      // console.log(err)
-    }
+    dispatch(
+      signUpUserStart({
+        displayName,
+        email,
+        password,
+        confirmPassword,
+      })
+    );
   };
 
   const configAuthWrapper = {
@@ -90,4 +105,4 @@ const SignUp = (props) => {
   );
 };
 
-export default withRouter(SignUp);
+export default SignUp;
